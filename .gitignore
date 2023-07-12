@@ -1,0 +1,8 @@
+src/uq4pk_src/data/EMILES_BASTI_BASE_BI_FITS/
+.DS_Store
+manuscript
+*/.ipynb_checkpoints
+*__pycache__*
+.idea/*
+*samples*.npy
+*.pytest_cache
