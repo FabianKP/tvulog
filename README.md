@@ -16,12 +16,7 @@ In particular, it contains the code that was used to produce all figures in the 
 This repository is structures as follows:
 
 - `examples/`: Contains the code for the numerical experiments in section 5 of the paper. 
-- `src/`: Contains the implementation of the main routines:
-  - `rectangular_cr/`: Contains the method for estimating the credible scale-space tubes from samples that is 
-  described in Appendix B of the paper.
-  - `tvulog/`: Contains the implementation of the TV-ULoG method, in particular the three optimization approaches 
-  (see `tv_ulog/optimization`).
-  - `ulog/`: Contains the implementation of the ULoG method from our previous work.
+- `src/`: Contains the implementation of the main routines.
 - `tests/`: Contains unit tests written in `pytest` for the most important modules.
 
 The figures can be reproduced with by running the scripts
