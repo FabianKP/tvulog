@@ -27,9 +27,9 @@ plots.mkdir(parents=True, exist_ok=True)
 # Create example.
 example = StellarRecovery(out=out, plots=plots, mode=mode)
 # Generate MCMC samples.
-#example.generate_samples()
+example.generate_samples()
 # Compute credible intervals.
-#example.compute_credible_intervals()
+example.compute_credible_intervals()
 # Plot setup.
 example.plot_setup()
 # Compute performance comparison.
@@ -37,6 +37,6 @@ example.compute_performance_comparison()
 # Plot performance comparison.
 example.plot_performance_comparison()
 # Compute method comparison.
-#example.compute_tvulog()
+example.compute_tvulog()
 # Plot method comparison.
-#example.plot_tvulog()
+example.plot_tvulog()

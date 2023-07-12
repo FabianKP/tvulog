@@ -5,7 +5,7 @@ Courtesy of Prashin Jethwa
 import numpy as np
 import os
 
-NUM_CPU = 10         # Number of CPUs used for computations.
+NUM_CPU = 5         # Number of CPUs used for computations.
 # Enforce parallel usage of CPU.
 os.environ["XLA_FLAGS"] = f"--xla_force_host_platform_device_count={NUM_CPU}"
 
