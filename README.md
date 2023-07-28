@@ -2,13 +2,14 @@
 
 This repository contains the Python code that accompanies the paper
 
-*Uncertainty Quantification for Scale-Space Blob Detection* ([arxiv-preprint]()).
+*Uncertainty Quantification for Scale-Space Blob Detection*.
 
 In particular, it contains the code that was used to produce all figures in the paper.
 
 ## Authors
 
 - Fabian Parzer (University of Vienna)
+- Clemens Kirisits (University of Vienna)
 - Otmar Scherzer (University of Vienna, RICAM Linz, CD Lab "MaMSi")
 
 ## Contents
