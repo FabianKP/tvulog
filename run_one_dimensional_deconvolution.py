@@ -37,7 +37,7 @@ example.plot_setup()
 # Compute performance comparison.
 #example.compute_performance_comparison()
 # Plot performance comparison.
-#example.plot_performance_comparison()
+example.plot_performance_comparison()
 # Compute method comparison.
 #example.compute_tvulog()
 # Plot method comparison.

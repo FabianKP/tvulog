@@ -128,14 +128,7 @@ class OnedimensionalDeconvolution(ExampleProblem):
         y_obs = self._y_obs
 
         # --- Plot of the deconvolution problem.
-        fig, ax = plt.subplots(1, 3, figsize=(CW, 0.5 * CW), sharey=True)
-        ax[0].plot(x_true)
-        ax[0].set_title(r"$f^*$")
-        ax[1].plot(y_true)
-        ax[1].set_title(r"$G f^*$")
-        ax[2].plot(y_obs)
-        ax[2].set_title(r"$y$")
-        plt.savefig(str(self._plots / "deconvolution_setup.png"), bbox_inches="tight")
+        self._figure2(x_true, y_true, y_obs)
 
         # --- Plot of the credible scale-space tube.
         # load credible intervals
@@ -258,7 +251,7 @@ class OnedimensionalDeconvolution(ExampleProblem):
         ax_x.set_ylabel("normalized objective")
         ax_x.set_ylim(e_min, None)
         ax_x.legend(prop={'size': 6})
-        plt.savefig(str(self._plots / "deconvolution_optimization.png"), bbox_inches="tight")
+        plt.savefig(str(self._plots / "Figure_8.png"), bbox_inches="tight")
 
         # --- Second plot: Investigate dependence on smoothing parameter.
         fig2, ax2 = plt.subplots(1, 1, figsize=(CW2, .5 * CW2))
@@ -333,12 +326,25 @@ class OnedimensionalDeconvolution(ExampleProblem):
     def _power_norm(vmax, vmin=0.):
         return colors.PowerNorm(gamma=1, vmin=vmin, vmax=vmax)
 
+    def _figure2(self, x_true, y_true, y_obs):
+        fig, ax = plt.subplots(1, 3, figsize=(CW, 0.5 * CW), sharey=True)
+        ax[0].plot(x_true)
+        ax[0].set_title(r"$f^*$")
+        ax[1].plot(y_true)
+        ax[1].set_title(r"$G f^*$")
+        ax[2].plot(y_obs)
+        ax[2].set_title(r"$y$")
+        ax[0].set_ylabel("intensity")
+        ax[1].set_xlabel(r"$x$")
+        plt.savefig(str(self._plots / "Figure_2.png"), bbox_inches="tight")
+
     def _figure3(self, lower_stack, upper_stack, ssr_est):
         vmin = np.min(lower_stack)
         vmax = np.max(upper_stack)
         x_max = ssr_est.shape[1]
         t_values = self._sigmas ** 2
         y_ticks = [10, 100, 1000]
+        y_ticklabels = [r"$10^1$", r"$10^2$", r"$10^3$"]
         x_ticks = [0, 100]
         extent = (0, x_max, 0, t_values.size)
 
@@ -354,14 +360,15 @@ class OnedimensionalDeconvolution(ExampleProblem):
         tick_positions = [np.interp(np.log10(tick), np.log10(t_values), np.arange(len(t_values))) for tick in y_ticks]
         # Set the custom locator and formatter for the y-axis
         ax[0].set_yticks(tick_positions)
-        ax[0].set_yticklabels(y_ticks)
-        ax[0].set_ylabel(r"$t$", rotation="horizontal")
+        ax[0].set_yticklabels(y_ticklabels)
+        ax[0].set_ylabel(r"$t$", rotation="horizontal", loc="top")
+        ax[0].yaxis.set_label_coords(-0.1, .9)
         ax[1].set_xlabel(r"$x$")
         for i in range(3):
             ax[i].set_xticks(x_ticks)
 
 
-        plt.savefig(str(self._plots / "deconvolution_tube.png"), bbox_inches="tight")
+        plt.savefig(str(self._plots / "Figure_3.png"), bbox_inches="tight")
 
 
     def _figure4(self, lower_stack, upper_stack, ssr_est):
@@ -377,7 +384,7 @@ class OnedimensionalDeconvolution(ExampleProblem):
         ax2.set_title(f"t={int(self._sigmas[-index] ** 2)}")
         ax2.set_ylabel("intensity")
         ax2.set_xlabel(r"$x$")
-        plt.savefig(str(self._plots / "deconvolution_tube_slice.png"), bbox_inches="tight")
+        plt.savefig(str(self._plots / "Figure_4.png"), bbox_inches="tight")
 
 
     def _figure5(self, normlap, normlap_est, normlap_true, mode_sets):
@@ -386,6 +393,7 @@ class OnedimensionalDeconvolution(ExampleProblem):
         t_values = self._sigmas ** 2
         extent = (0, normlap.shape[1], 0, t_values.size)
         y_ticks = [10, 100, 1000]
+        y_ticklabels = [r"$10^1$", r"$10^2$", r"$10^3$"]
         # Two rows, three columns.
         fig, ax = plt.subplots(2, 3, figsize=(CW2, 0.5 * CW2), sharey="row")
         # - First row: Normalized Laplacian in scale space.
@@ -397,8 +405,9 @@ class OnedimensionalDeconvolution(ExampleProblem):
         tick_positions = [np.interp(np.log10(tick), np.log10(t_values), np.arange(len(t_values))) for tick in y_ticks]
         # Set the custom locator and formatter for the y-axis
         ax[0, 0].set_yticks(tick_positions)
-        ax[0, 0].set_yticklabels(y_ticks)
+        ax[0, 0].set_yticklabels(y_ticklabels)
         ax[0, 0].set_ylabel(r"$t$", rotation="horizontal")
+        ax[0, 0].yaxis.set_label_coords(-0.05, .95)
 
         # Second panel shows the normalized Laplacian of the TV-ULoG minimizer.
         mappable = ax[0, 1].imshow(normlap, cmap="gnuplot", aspect="auto", extent=extent,
@@ -426,7 +435,7 @@ class OnedimensionalDeconvolution(ExampleProblem):
         ax[1, 1].set_xlabel(r"$x$")
         ax[1, 2].remove()
         # Store the plot.
-        plt.savefig(str(self._plots / "deconvolution_normlap_comparison.png"), bbox_inches="tight")
+        plt.savefig(str(self._plots / "Figure_5.png"), bbox_inches="tight")
 
 
     def _figure6(self, blob_sets):
@@ -457,7 +466,7 @@ class OnedimensionalDeconvolution(ExampleProblem):
         ax.legend(loc="upper right")
         ax.set_xlabel(r"$x$")
         ax.set_ylabel("intensity")
-        plt.savefig(str(self._plots / "deconvolution_blobs.png"), bbox_inches="tight")
+        plt.savefig(str(self._plots / "Figure_6.png"), bbox_inches="tight")
 
 
 
