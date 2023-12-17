@@ -1,0 +1,11 @@
+prefix=/home/fabian/uni_projects/tvulog/tvulog_env
+exec_prefix=/home/fabian/uni_projects/tvulog/tvulog_env
+libdir=/home/fabian/uni_projects/tvulog/tvulog_env/lib
+includedir=/home/fabian/uni_projects/tvulog/tvulog_env/include
+
+Name: uuid
+Description: Universally unique id library
+Version: 2.32.1
+Requires:
+Cflags: -I${includedir}/uuid
+Libs: -L${libdir} -luuid

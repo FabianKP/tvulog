@@ -7,6 +7,8 @@ matplotlib.rc('text.latex', preamble=r'\usepackage{amsmath}')
 from matplotlib import colors
 import numpy as np
 from pathlib import Path
+# Create a custom tick locator and formatter
+from matplotlib.ticker import FixedLocator, FixedFormatter
 
 from src.ulog.scale_space_tube import estimate_tube1d
 from src.tvulog import ExtractorVisualizer1D
@@ -143,29 +145,10 @@ class OnedimensionalDeconvolution(ExampleProblem):
         lower_stack = lb[::-1, :]
         upper_stack = ub[::-1, :]
         ssr_est = ssr_est[::-1, :]
-        # Make plot.
-        vmin = np.min(lower_stack)
-        vmax = np.max(upper_stack)
-        fig, ax = plt.subplots(1, 3, figsize=(CW, 0.3 * CW), sharey=True)
-        ax[0].imshow(lower_stack, cmap="gnuplot", aspect="auto", vmin=vmin, vmax=vmax)
-        ax[0].set_title(r"$u^\mathrm{low}$")
-        ax[1].imshow(upper_stack, cmap="gnuplot", aspect="auto", vmin=vmin, vmax=vmax)
-        ax[1].set_title(r"$u^\mathrm{upp}$")
-        ax[2].imshow(ssr_est, cmap="gnuplot", aspect="auto", vmin=vmin, vmax=vmax)
-        ax[2].set_title(r"$u^\mathrm{mean}$")
-        plt.savefig(str(self._plots / "deconvolution_tube.png"), bbox_inches="tight")
 
-        # -- Plot of a horizontal (fixed scale) slice through the tube.
-        fig2, ax2 = plt.subplots(1, 1, figsize=(CW, CW))
-        k = lower_stack.shape[0]
-        index = 5 * int(k / 6)
-        ax2.plot(lower_stack[index], label=r"$u^\mathrm{low}$", color="green", linestyle=":")
-        ax2.plot(upper_stack[index], label=r"$u^\mathrm{upp}$", color="blue", linestyle=":")
-        ax2.fill_between(np.arange(lower_stack.shape[1]), lower_stack[index], upper_stack[index], alpha=0.2)
-        ax2.plot(ssr_est[index], label=r"$u^\mathrm{mean}$", color="red")
-        ax2.legend()
-        ax2.set_title(f"t={int(self._sigmas[-index] ** 2)}")
-        plt.savefig(str(self._plots / "deconvolution_tube_slice.png"), bbox_inches="tight")
+        # Make plots.
+        self._figure3(lower_stack, upper_stack, ssr_est)
+        self._figure4(lower_stack, upper_stack, ssr_est)
 
     def compute_performance_comparison(self):
         """
@@ -318,68 +301,11 @@ class OnedimensionalDeconvolution(ExampleProblem):
         # Re-order so that smallest scale is at bottom.
         normlap_true = normlap_true[::-1, :]
         normlap_est = normlap_est[::-1, :]
-        minimizer = minimizer[::-1, :]
         normlap = normlap[::-1, :]
 
-        # --- First plot: TV-ULoG minimizer in scale space.
-        # Two rows, three columns.
-        fig, ax = plt.subplots(2, 3, figsize=(CW2, 0.5 * CW2), sharey="row")
-        # - First row: Normalized Laplacian in scale space.
-        # First panel shows the normalized Laplacian of the posterior mean.
-        ax[0, 0].imshow(normlap_est, cmap="gnuplot", aspect="auto", norm=self._power_norm(vmax=np.max(normlap_true),
-                                                                                          vmin=np.min(normlap_true)))
-        ax[0, 0].set_title(r"$\tilde{\Delta} u^\mathrm{mean}$")
-        # Second panel shows the normalized Laplacian of the TV-ULoG minimizer.
-        mappable = ax[0, 1].imshow(normlap, cmap="gnuplot", aspect="auto",
-                                   norm=self._power_norm(vmax=np.max(normlap_true), vmin=np.min(normlap_true)))
-        ax[0, 1].set_title(r"$\tilde{\Delta} \bar{u}$")
-        # Third panel shows the extracted blob regions.
-        mode_set_image = np.zeros_like(minimizer)
-        for mode_set in mode_sets:
-            mode_set_image[mode_set.indices] = 1.
-        # Reorder so that smallest scale is at bottom (more intuitive visualization).
-        mode_set_image = mode_set_image[::-1, :]
-        ax[0, 2].imshow(mode_set_image, cmap="gnuplot", aspect="auto", norm=self._power_norm(vmax=np.max(normlap_true),
-                                                                                             vmin=np.min(normlap_true)))
-        ax[0, 2].set_title(r"extracted blob regions")
-        # Add colorbar.
-        add_colorbar_to_axis(fig, ax[0, 1], mappable, ticks=False)
-        # - Second row: Slice for fixed scale.
-        k = minimizer.shape[0]
-        scale_index = int(k / 2)
-        ax[1, 0].plot(normlap_est[scale_index])
-        ax[1, 1].plot(normlap[scale_index])
-        ax[1, 2].remove()
-        # Store the plot.
-        plt.savefig(str(self._plots / "deconvolution_normlap_comparison.png"), bbox_inches="tight")
+        self._figure5(normlap, normlap_est, normlap_true, mode_sets)
+        self._figure6(blob_sets)
 
-        # --- Second plot: Visualize blob regions in the signal domain.
-        # Load posterior mean and ground truth.
-        x_mean = np.load(str(self._path_estimate))
-        x_true = self._ground_truth
-        # Make a plot of the posterior mean and ground truth, together with a visualization of the blob sets.
-        fig, ax = plt.subplots(1, 1, figsize=(CW, CW))
-        ax.plot(x_true, color="g", label=r"$f^*$", linestyle=":")
-        ax.plot(x_mean, color="r", label=r"$f^\mathrm{mean}$")
-        # Visualize blob sets by horizontal bars.
-        for blob_inner, blob_outer in blob_sets:
-            i_min_inner = np.min(blob_inner.indices[0])
-            i_max_inner = np.max(blob_inner.indices[0])
-            h = np.max(x_mean[i_min_inner:i_max_inner])
-            # Larger errorbar first. Otherwise, inner errorbar get overwritten.
-            i_min_outer = np.min(blob_outer.indices[0])
-            i_max_outer = np.max(blob_outer.indices[0])
-            i_mid_outer = 0.5 * (i_min_outer + i_max_outer)
-            i_err_outer = 0.5 * (i_max_outer - i_min_outer)
-            ebar = ax.errorbar(i_mid_outer, h, xerr=i_err_outer, color="steelblue", capsize=2)
-            ebar[-1][0].set_linestyle(":")
-            # Now inner error bar.
-            i_mid_inner = 0.5 * (i_min_inner + i_max_inner)
-            i_err_inner = 0.5 * (i_max_inner - i_min_inner)
-            h = np.max(x_mean[i_min_inner:i_max_inner])
-            ax.errorbar(i_mid_inner, h, xerr=i_err_inner, color="steelblue", capsize=5)
-        ax.legend(loc="upper right")
-        plt.savefig(str(self._plots / "deconvolution_blobs.png"), bbox_inches="tight")
 
     def _get_y_obs(self) -> np.ndarray:
         return self._y_obs
@@ -406,3 +332,132 @@ class OnedimensionalDeconvolution(ExampleProblem):
     @staticmethod
     def _power_norm(vmax, vmin=0.):
         return colors.PowerNorm(gamma=1, vmin=vmin, vmax=vmax)
+
+    def _figure3(self, lower_stack, upper_stack, ssr_est):
+        vmin = np.min(lower_stack)
+        vmax = np.max(upper_stack)
+        x_max = ssr_est.shape[1]
+        t_values = self._sigmas ** 2
+        y_ticks = [10, 100, 1000]
+        x_ticks = [0, 100]
+        extent = (0, x_max, 0, t_values.size)
+
+        fig, ax = plt.subplots(1, 3, figsize=(CW, 0.3 * CW), sharey=True)
+        ax[0].imshow(lower_stack, cmap="gnuplot", aspect="auto", extent=extent, vmin=vmin, vmax=vmax)
+        ax[0].set_title(r"$u^\mathrm{low}$")
+        ax[1].imshow(upper_stack, cmap="gnuplot", aspect="auto", extent=extent, vmin=vmin, vmax=vmax)
+        ax[1].set_title(r"$u^\mathrm{upp}$")
+        ax[2].imshow(ssr_est, cmap="gnuplot", aspect="auto", extent=extent, vmin=vmin, vmax=vmax)
+        ax[2].set_title(r"$u^\mathrm{mean}$")
+
+        # Calculate the positions of ticks based on y_ticks and y_span
+        tick_positions = [np.interp(np.log10(tick), np.log10(t_values), np.arange(len(t_values))) for tick in y_ticks]
+        # Set the custom locator and formatter for the y-axis
+        ax[0].set_yticks(tick_positions)
+        ax[0].set_yticklabels(y_ticks)
+        ax[0].set_ylabel(r"$t$", rotation="horizontal")
+        ax[1].set_xlabel(r"$x$")
+        for i in range(3):
+            ax[i].set_xticks(x_ticks)
+
+
+        plt.savefig(str(self._plots / "deconvolution_tube.png"), bbox_inches="tight")
+
+
+    def _figure4(self, lower_stack, upper_stack, ssr_est):
+        # -- Plot of a horizontal (fixed scale) slice through the tube.
+        fig2, ax2 = plt.subplots(1, 1, figsize=(CW, CW))
+        k = lower_stack.shape[0]
+        index = 5 * int(k / 6)
+        ax2.plot(lower_stack[index], label=r"$u^\mathrm{low}$", color="green", linestyle=":")
+        ax2.plot(upper_stack[index], label=r"$u^\mathrm{upp}$", color="blue", linestyle=":")
+        ax2.fill_between(np.arange(lower_stack.shape[1]), lower_stack[index], upper_stack[index], alpha=0.2)
+        ax2.plot(ssr_est[index], label=r"$u^\mathrm{mean}$", color="red")
+        ax2.legend()
+        ax2.set_title(f"t={int(self._sigmas[-index] ** 2)}")
+        ax2.set_ylabel("intensity")
+        ax2.set_xlabel(r"$x$")
+        plt.savefig(str(self._plots / "deconvolution_tube_slice.png"), bbox_inches="tight")
+
+
+    def _figure5(self, normlap, normlap_est, normlap_true, mode_sets):
+        # --- First plot: TV-ULoG minimizer in scale space.
+        x_span = np.arange(normlap.shape[1])
+        t_values = self._sigmas ** 2
+        extent = (0, normlap.shape[1], 0, t_values.size)
+        y_ticks = [10, 100, 1000]
+        # Two rows, three columns.
+        fig, ax = plt.subplots(2, 3, figsize=(CW2, 0.5 * CW2), sharey="row")
+        # - First row: Normalized Laplacian in scale space.
+        # First panel shows the normalized Laplacian of the posterior mean.
+        ax[0, 0].imshow(normlap_est, cmap="gnuplot", aspect="auto", extent=extent,
+                        norm=self._power_norm(vmax=np.max(normlap_true), vmin=np.min(normlap_true)))
+        ax[0, 0].set_title(r"$\tilde{\Delta} u^\mathrm{mean}$")
+        # Calculate the positions of ticks based on y_ticks and y_span
+        tick_positions = [np.interp(np.log10(tick), np.log10(t_values), np.arange(len(t_values))) for tick in y_ticks]
+        # Set the custom locator and formatter for the y-axis
+        ax[0, 0].set_yticks(tick_positions)
+        ax[0, 0].set_yticklabels(y_ticks)
+        ax[0, 0].set_ylabel(r"$t$", rotation="horizontal")
+
+        # Second panel shows the normalized Laplacian of the TV-ULoG minimizer.
+        mappable = ax[0, 1].imshow(normlap, cmap="gnuplot", aspect="auto", extent=extent,
+                                   norm=self._power_norm(vmax=np.max(normlap_true), vmin=np.min(normlap_true)))
+        ax[0, 1].set_title(r"$\tilde{\Delta} \bar{u}$")
+        # Third panel shows the extracted blob regions.
+        mode_set_image = np.zeros_like(normlap)
+        for mode_set in mode_sets:
+            mode_set_image[mode_set.indices] = 1.
+        # Reorder so that smallest scale is at bottom (more intuitive visualization).
+        mode_set_image = mode_set_image[::-1, :]
+        ax[0, 2].imshow(mode_set_image, cmap="gnuplot", aspect="auto", extent=extent,
+                        norm=self._power_norm(vmax=np.max(normlap_true), vmin=np.min(normlap_true)))
+        ax[0, 2].set_title(r"extracted blob regions")
+        ax[0, 2].set_xlabel(r"$x$")
+        # Add colorbar.
+        add_colorbar_to_axis(fig, ax[0, 1], mappable, ticks=False)
+        # - Second row: Slice for fixed scale.
+        k = normlap.shape[0]
+        scale_index = int(k / 2)
+        ax[1, 0].plot(normlap_est[scale_index])
+        ax[1, 0].set_ylabel("intensity")
+        ax[1, 0].set_xlabel(r"$x$")
+        ax[1, 1].plot(normlap[scale_index])
+        ax[1, 1].set_xlabel(r"$x$")
+        ax[1, 2].remove()
+        # Store the plot.
+        plt.savefig(str(self._plots / "deconvolution_normlap_comparison.png"), bbox_inches="tight")
+
+
+    def _figure6(self, blob_sets):
+        # Load posterior mean and ground truth.
+        x_mean = np.load(str(self._path_estimate))
+        x_true = self._ground_truth
+        # Make a plot of the posterior mean and ground truth, together with a visualization of the blob sets.
+        fig, ax = plt.subplots(1, 1, figsize=(CW, CW))
+        ax.plot(x_true, color="g", label=r"$f^*$", linestyle=":")
+        ax.plot(x_mean, color="r", label=r"$f^\mathrm{mean}$")
+        # Visualize blob sets by horizontal bars.
+        for blob_inner, blob_outer in blob_sets:
+            i_min_inner = np.min(blob_inner.indices[0])
+            i_max_inner = np.max(blob_inner.indices[0])
+            h = np.max(x_mean[i_min_inner:i_max_inner])
+            # Larger errorbar first. Otherwise, inner errorbar get overwritten.
+            i_min_outer = np.min(blob_outer.indices[0])
+            i_max_outer = np.max(blob_outer.indices[0])
+            i_mid_outer = 0.5 * (i_min_outer + i_max_outer)
+            i_err_outer = 0.5 * (i_max_outer - i_min_outer)
+            ebar = ax.errorbar(i_mid_outer, h, xerr=i_err_outer, color="steelblue", capsize=2)
+            ebar[-1][0].set_linestyle(":")
+            # Now inner error bar.
+            i_mid_inner = 0.5 * (i_min_inner + i_max_inner)
+            i_err_inner = 0.5 * (i_max_inner - i_min_inner)
+            h = np.max(x_mean[i_min_inner:i_max_inner])
+            ax.errorbar(i_mid_inner, h, xerr=i_err_inner, color="steelblue", capsize=5)
+        ax.legend(loc="upper right")
+        ax.set_xlabel(r"$x$")
+        ax.set_ylabel("intensity")
+        plt.savefig(str(self._plots / "deconvolution_blobs.png"), bbox_inches="tight")
+
+
+

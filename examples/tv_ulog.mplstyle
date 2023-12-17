@@ -1,7 +1,7 @@
 
 # This file defines some global parameters to get consistent plots.
 
-figure.dpi: 600
+figure.dpi: 300
 
 axes.labelsize: 10
 axes.titlesize: 10
